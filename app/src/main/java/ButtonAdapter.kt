@@ -20,12 +20,17 @@ import androidx.recyclerview.widget.RecyclerView
 
 class ButtonAdapter(
     private val context: Context,
-    private val buttonItems: List<ButtonItem>
+    private var buttonItems: List<ButtonItem>
 ) : RecyclerView.Adapter<ButtonAdapter.ButtonViewHolder>() {
 
     class ButtonViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val button: Button = view.findViewById(R.id.button)
         val imageV: ImageView = view.findViewById(R.id.imageView)
+    }
+
+    fun updateStates(items: List<ButtonItem>){
+        buttonItems = items
+        notifyDataSetChanged()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ButtonViewHolder {
@@ -41,12 +46,14 @@ class ButtonAdapter(
         )
 
         holder.button.setOnClickListener {
-            buttonItem.isEnabled = !buttonItem.isEnabled
+            //buttonItem.isEnabled = !buttonItem.isEnabled
             notifyItemChanged(position)
 
             when (buttonItem.state) {
-                ButtonState.Bluetooth -> openBluetooth(buttonItem.isEnabled)
-                ButtonState.Flashlight -> toggleFlashlight(buttonItem.isEnabled)
+                ButtonState.Bluetooth -> openBluetooth()
+                ButtonState.Flashlight -> {
+                    toggleFlashlight(!buttonItem.isEnabled)
+                    buttonItem.isEnabled = !buttonItem.isEnabled}
                 ButtonState.Mute -> toggleMute()
                 ButtonState.Location -> openLocation()
                 ButtonState.Wifi -> openWifi()
@@ -56,9 +63,9 @@ class ButtonAdapter(
         }
     }
 
-    private fun openBluetooth(enabled: Boolean) {
-            //val intent = Intent(Settings.ACTION_BLUETOOTH_SETTINGS)
-            //context.startActivity(intent)
+    private fun openBluetooth() {
+        val intent = Intent(Settings.ACTION_BLUETOOTH_SETTINGS)
+        context.startActivity(intent)
     }
 
     private fun toggleFlashlight(enabled: Boolean) {
@@ -79,14 +86,14 @@ class ButtonAdapter(
             audioManager.adjustStreamVolume(AudioManager.STREAM_RING, AudioManager.ADJUST_UNMUTE, 0)
             audioManager.adjustStreamVolume(AudioManager.STREAM_NOTIFICATION, AudioManager.ADJUST_UNMUTE, 0)
             audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_UNMUTE, 0)
-           // audioManager.adjustStreamVolume(AudioManager.STREAM_ALARM,AudioManager.ADJUST_UNMUTE, 0)
+            // audioManager.adjustStreamVolume(AudioManager.STREAM_ALARM,AudioManager.ADJUST_UNMUTE, 0)
         } else {
             // Mute all streams
             audioManager.adjustStreamVolume(AudioManager.STREAM_SYSTEM, AudioManager.ADJUST_MUTE, 0)
             audioManager.adjustStreamVolume(AudioManager.STREAM_RING, AudioManager.ADJUST_MUTE, 0)
             audioManager.adjustStreamVolume(AudioManager.STREAM_NOTIFICATION, AudioManager.ADJUST_MUTE, 0)
             audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_MUTE, 0)
-           // audioManager.adjustStreamVolume(AudioManager.STREAM_ALARM,AudioManager.ADJUST_MUTE, 0)
+            // audioManager.adjustStreamVolume(AudioManager.STREAM_ALARM,AudioManager.ADJUST_MUTE, 0)
         }
     }
 
@@ -96,8 +103,8 @@ class ButtonAdapter(
 
     }
     private fun openWifi() {
-            val intent = Intent(Settings.ACTION_WIFI_SETTINGS)
-            context.startActivity(intent) }
+        val intent = Intent(Settings.ACTION_WIFI_SETTINGS)
+        context.startActivity(intent) }
 
     private fun openAirplaneModeSettings() {
         val intent = Intent(Settings.ACTION_AIRPLANE_MODE_SETTINGS)

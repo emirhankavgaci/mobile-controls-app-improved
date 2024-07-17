@@ -1,6 +1,7 @@
 package com.example.mobilecontrolsappimproved
 
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -11,7 +12,9 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.mobilecontrolsappimproved.com.example.mobilecontrolsappimproved.BluetoothBroadcastReceiver
 import com.example.mobilecontrolsappimproved.com.example.mobilecontrolsappimproved.ListenerBluetooth
+import com.example.mobilecontrolsappimproved.com.example.mobilecontrolsappimproved.WifiBroadcastReceiver
 
 class MainActivity : AppCompatActivity(),ListenerBluetooth {
 
@@ -19,19 +22,32 @@ class MainActivity : AppCompatActivity(),ListenerBluetooth {
     private lateinit var buttonAdapter: ButtonAdapter
     private lateinit var bluetoothReceiver: BluetoothBroadcastReceiver
     private  lateinit var  wifiReceiver : WifiBroadcastReceiver
+    private var buttonItems2 :List<ButtonItem> = listOf()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        InitializeRecycler()
+        wifiReceiver = WifiBroadcastReceiver(this) // receivers
         bluetoothReceiver = BluetoothBroadcastReceiver(this)
-        val filterBt = IntentFilter().apply {
-            addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
-        }
-       // val filterWifi = IntentFilter().apply
-       // registerReceiver(bluetoothReceiver, filterBt)
+
+        recyclerView = findViewById(R.id.recyclerView)
+        recyclerView.layoutManager = GridLayoutManager(this, 2) // 4 columns
+        buttonAdapter = ButtonAdapter(this,buttonItems2)
+        recyclerView.adapter = buttonAdapter
 
 
-        val buttonItems = listOf(
+        val btFilter = IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)   //filters
+        registerReceiver(bluetoothReceiver, btFilter)
+        val wifiFilter = IntentFilter(WifiManager.WIFI_STATE_CHANGED_ACTION)
+        registerReceiver(wifiReceiver, wifiFilter)
+
+        setState()
+    }
+
+    private fun InitializeRecycler(){
+
+        buttonItems2 = listOf(
             ButtonItem(ButtonState.Wifi, false),
             ButtonItem(ButtonState.MobileData, false),
             ButtonItem(ButtonState.Bluetooth, false),
@@ -46,105 +62,56 @@ class MainActivity : AppCompatActivity(),ListenerBluetooth {
             ButtonItem(ButtonState.Location,false)
         )
 
-        buttonAdapter = ButtonAdapter(this,buttonItems)
-        recyclerView = findViewById(R.id.recyclerView)
-        recyclerView.layoutManager = GridLayoutManager(this, 2) // 4 columns
-        recyclerView.adapter = buttonAdapter
     }
+
+    private fun setState() {
+        for (item in buttonItems2){
+            when(item.state){
+                ButtonState.Bluetooth ->{
+                    val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+                    val bluetoothAdapter = bluetoothManager.adapter
+                    item.isEnabled = bluetoothAdapter.isEnabled
+
+                    println("-     ------------------------------ >>> ${bluetoothAdapter.isEnabled}")
+                }
+                ButtonState.Wifi ->{
+                    val wifiManager = getSystemService(Context.WIFI_SERVICE) as WifiManager
+                    item.isEnabled = wifiManager.isWifiEnabled
+                    println("-     ------------------------------ >>> ${wifiManager.isWifiEnabled}")
+                }
+                else-> {}
+            }
+
+            buttonAdapter.updateStates(buttonItems2)
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         unregisterReceiver(bluetoothReceiver)
+        unregisterReceiver(wifiReceiver)
+
     }
-
-    private fun stateChange(isBtState: Boolean, isWifiState: Boolean) : List<ButtonItem>
-    {
-            val buttonItems = listOf(
-            ButtonItem(ButtonState.Wifi, isWifiState),
-            ButtonItem(ButtonState.MobileData, false),
-            ButtonItem(ButtonState.Bluetooth, isBtState),
-            ButtonItem(ButtonState.Flashlight, false),
-            ButtonItem(ButtonState.AirplaneMode,false),
-            ButtonItem(ButtonState.AutoBrightness,false),
-            ButtonItem(ButtonState.Screenshot,false),
-            ButtonItem(ButtonState.LockOrientation,false),
-            ButtonItem(ButtonState.LockScreen,false),
-            ButtonItem(ButtonState.Mute,false),
-            ButtonItem(ButtonState.Hotspot,false),
-            ButtonItem(ButtonState.Location,false))
-
-        return buttonItems
-    }
-
-
 
     override fun bluetoothStateChange(isBtState: Boolean) : Boolean {
         if (isBtState)
             Toast.makeText(this, "Bluetooth turned on", Toast.LENGTH_SHORT).show()
         else
             Toast.makeText(this, "Bluetooth turned off", Toast.LENGTH_SHORT).show()
-            // Add more items as needed
-        val buttonItems = stateChange(isBtState,isWifiState = true)
-        buttonAdapter = ButtonAdapter(this,buttonItems)
-        recyclerView.adapter = buttonAdapter
+
+        setState()
         return isBtState
     }
 
     override fun wifiStateChange(isWifiState: Boolean) : Boolean {
-        return true
+        if (isWifiState)
+            Toast.makeText(this, "Wifi turned on", Toast.LENGTH_SHORT).show()
+        else
+            Toast.makeText(this, "Wifi turned off", Toast.LENGTH_SHORT).show()
+
+        setState()
+        return isWifiState
     }
-
-
-    class BluetoothBroadcastReceiver (val listenerBluetooth: ListenerBluetooth): BroadcastReceiver() {
-
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent == null || context == null) return
-
-            when (intent.action) {
-                BluetoothAdapter.ACTION_STATE_CHANGED -> {
-                    val state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR)
-                    when (state) {
-                        BluetoothAdapter.STATE_OFF -> {
-                            listenerBluetooth.bluetoothStateChange(false)
-                        }
-                        BluetoothAdapter.STATE_ON -> {
-                            // Bluetooth turned on
-                            listenerBluetooth.bluetoothStateChange(true)
-
-                            // Update UI or perform actions here
-                        }
-                        // Handle other states if needed
-                    }
-                }
-            }
-        }
-    }
-
-    class WifiBroadcastReceiver (val listenerWifi: ListenerBluetooth): BroadcastReceiver() {
-
-        override fun onReceive(context: Context?, intent: Intent?) {
-            if (intent == null || context == null) return
-
-            when (intent.action) {
-                WifiManager.WIFI_STATE_CHANGED_ACTION-> {
-                    val state = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE,WifiManager.WIFI_STATE_UNKNOWN)
-                    when (state) {
-                        BluetoothAdapter.STATE_OFF -> {
-                            listenerWifi.wifiStateChange(false)
-                        }
-                        BluetoothAdapter.STATE_ON -> {
-                            // Bluetooth turned on
-                            listenerWifi.wifiStateChange(true)
-
-                            // Update UI or perform actions here
-                        }
-                        // Handle other states if needed
-                    }
-                }
-            }
-        }
-    }
-
-
 
 }
 
