@@ -7,6 +7,7 @@ import android.content.Intent
 import android.hardware.camera2.CameraManager
 import android.media.AudioManager
 import android.net.wifi.WifiManager
+import android.os.Build
 import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.View
@@ -14,9 +15,11 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity.BLUETOOTH_SERVICE
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
+import com.example.mobilecontrolsappimproved.com.example.mobilecontrolsappimproved.FlashlightManager
 
 class ButtonAdapter(
     private val context: Context,
@@ -28,39 +31,47 @@ class ButtonAdapter(
         val imageV: ImageView = view.findViewById(R.id.imageView)
     }
 
-    fun updateStates(items: List<ButtonItem>){
-        buttonItems = items
-        notifyDataSetChanged()
-    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ButtonViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.button_layouts, parent, false)
         return ButtonViewHolder(view)
     }
 
+    @RequiresApi(Build.VERSION_CODES.S)
     override fun onBindViewHolder(holder: ButtonViewHolder, position: Int) {
         val buttonItem = buttonItems[position]
         val state = buttonItem.state
-        holder.button.background = ContextCompat.getDrawable(context,if (buttonItem.isEnabled) state.enabledBackground else state.disabledBackground)
-        holder.imageV.setImageDrawable(ContextCompat.getDrawable(context,if (buttonItem.isEnabled) state.enabledIcon else state.disabledIcon)
-        )
+        holder.button.background = ContextCompat.getDrawable(context, if (buttonItem.isEnabled) state.enabledBackground else state.disabledBackground)
+        holder.imageV.setImageDrawable(ContextCompat.getDrawable(context, if (buttonItem.isEnabled) state.enabledIcon else state.disabledIcon))
 
         holder.button.setOnClickListener {
-            //buttonItem.isEnabled = !buttonItem.isEnabled
-            notifyItemChanged(position)
-
             when (buttonItem.state) {
                 ButtonState.Bluetooth -> openBluetooth()
                 ButtonState.Flashlight -> {
-                    toggleFlashlight(!buttonItem.isEnabled)
-                    buttonItem.isEnabled = !buttonItem.isEnabled}
+                    val activity = context as MainActivity
+                    activity.flashlightManager.toggleFlashlight()
+                }
                 ButtonState.Mute -> toggleMute()
                 ButtonState.Location -> openLocation()
                 ButtonState.Wifi -> openWifi()
+                ButtonState.MobileData -> openMobileData()
                 ButtonState.AirplaneMode -> openAirplaneModeSettings()
+                ButtonState.LockOrientation -> toggleOrientationLock()
+                ButtonState.AutoBrightness -> toggleAutoBrightness()
                 else -> {}
             }
         }
+    }
+
+    fun updateStates(newButtonItems: List<ButtonItem>) {
+        this.buttonItems = newButtonItems
+        notifyDataSetChanged()
+    }
+    @RequiresApi(Build.VERSION_CODES.S)
+    private fun openMobileData() {
+        val intent = Intent(Settings.Panel.ACTION_INTERNET_CONNECTIVITY)
+        context.startActivity(intent)
+        notifyDataSetChanged()
     }
 
     private fun openBluetooth() {
@@ -69,10 +80,9 @@ class ButtonAdapter(
     }
 
     private fun toggleFlashlight(enabled: Boolean) {
-        val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
+        val flashlightManager = FlashlightManager(context)
         try {
-            val cameraId = cameraManager.cameraIdList[0]
-            cameraManager.setTorchMode(cameraId, enabled)
+           flashlightManager.toggleFlashlight()
         } catch (e: Exception) {
             println("Error toggling flashlight: $e")
         }
@@ -110,5 +120,43 @@ class ButtonAdapter(
         val intent = Intent(Settings.ACTION_AIRPLANE_MODE_SETTINGS)
         context.startActivity(intent)
     }
-    override fun getItemCount(): Int = buttonItems.size
+    private fun toggleAutoBrightness() {
+        val isEnabled = Settings.System.getInt(
+            context.contentResolver,
+            Settings.System.SCREEN_BRIGHTNESS_MODE,
+            Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL
+        ) == Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC
+
+        Settings.System.putInt(
+            context.contentResolver,
+            Settings.System.SCREEN_BRIGHTNESS_MODE,
+            if (isEnabled) Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL else Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC
+        )
+
+        Toast.makeText(context, if (isEnabled) "Auto Brightness OFF" else "Auto Brightness ON", Toast.LENGTH_SHORT).show()
+    }
+    private fun toggleOrientationLock() {
+        val isLocked = Settings.System.getInt(
+            context.contentResolver,
+            Settings.System.ACCELEROMETER_ROTATION,
+            1
+        ) == 0
+
+        Settings.System.putInt(
+            context.contentResolver,
+            Settings.System.ACCELEROMETER_ROTATION,
+            if (isLocked) 1 else 0
+        )
+
+        Toast.makeText(
+            context,
+            if (isLocked) "Orientation Lock OFF" else "Orientation Lock ON",
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+
+
+
+
+        override fun getItemCount(): Int = buttonItems.size
 }

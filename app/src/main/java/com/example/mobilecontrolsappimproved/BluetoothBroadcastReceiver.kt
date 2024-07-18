@@ -5,7 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 
-class BluetoothBroadcastReceiver(val listenerBluetooth: ListenerBluetooth) : BroadcastReceiver() {
+class BluetoothBroadcastReceiver(val listenerBluetooth: ListenerAll) : BroadcastReceiver() {
 
     override fun onReceive(context: Context?, intent: Intent?) {
 

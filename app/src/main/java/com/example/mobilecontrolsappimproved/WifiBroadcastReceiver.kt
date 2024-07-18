@@ -5,7 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.wifi.WifiManager
 
-class WifiBroadcastReceiver (val listenerWifi: ListenerBluetooth): BroadcastReceiver() {
+class WifiBroadcastReceiver (val listenerWifi: ListenerAll): BroadcastReceiver() {
 
     override fun onReceive(context: Context?, intent: Intent?) {
         if (intent == null || context == null) return
