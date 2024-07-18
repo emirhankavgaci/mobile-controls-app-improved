@@ -79,14 +79,6 @@ class ButtonAdapter(
         context.startActivity(intent)
     }
 
-    private fun toggleFlashlight(enabled: Boolean) {
-        val flashlightManager = FlashlightManager(context)
-        try {
-           flashlightManager.toggleFlashlight()
-        } catch (e: Exception) {
-            println("Error toggling flashlight: $e")
-        }
-    }
 
     private fun toggleMute() {
         val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
