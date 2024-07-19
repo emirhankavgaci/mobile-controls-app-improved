@@ -1,14 +1,17 @@
 package com.example.mobilecontrolsappimproved
 
+import android.app.NotificationManager
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.Intent
 import android.hardware.camera2.CameraManager
 import android.media.AudioManager
+import android.net.wifi.WifiConfiguration
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.provider.Settings
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -20,15 +23,18 @@ import androidx.appcompat.app.AppCompatActivity.BLUETOOTH_SERVICE
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.mobilecontrolsappimproved.com.example.mobilecontrolsappimproved.FlashlightManager
+import com.example.mobilecontrolsappimproved.com.example.mobilecontrolsappimproved.ListenerAll
 
 class ButtonAdapter(
     private val context: Context,
-    private var buttonItems: List<ButtonItem>
+    private var buttonItems: List<ButtonItem>,
+    private val listenerAll: ListenerAll
 ) : RecyclerView.Adapter<ButtonAdapter.ButtonViewHolder>() {
 
     class ButtonViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val button: Button = view.findViewById(R.id.button)
         val imageV: ImageView = view.findViewById(R.id.imageView)
+
     }
 
 
@@ -58,20 +64,21 @@ class ButtonAdapter(
                 ButtonState.AirplaneMode -> openAirplaneModeSettings()
                 ButtonState.LockOrientation -> toggleOrientationLock()
                 ButtonState.AutoBrightness -> toggleAutoBrightness()
+                ButtonState.Hotspot -> toggleHotspot()
                 else -> {}
             }
+            notifyItemChanged(position)
         }
     }
 
     fun updateStates(newButtonItems: List<ButtonItem>) {
-        this.buttonItems = newButtonItems
+        buttonItems = newButtonItems
         notifyDataSetChanged()
     }
     @RequiresApi(Build.VERSION_CODES.S)
     private fun openMobileData() {
         val intent = Intent(Settings.Panel.ACTION_INTERNET_CONNECTIVITY)
         context.startActivity(intent)
-        notifyDataSetChanged()
     }
 
     private fun openBluetooth() {
@@ -79,25 +86,31 @@ class ButtonAdapter(
         context.startActivity(intent)
     }
 
+    fun updateAirplaneModeState(isAirplaneModeOn: Boolean) {
+        buttonItems.find { it.state == ButtonState.AirplaneMode }?.isEnabled = isAirplaneModeOn
+        notifyDataSetChanged()
+    }
+    fun updateMobileDataState(isMobileDataOn: Boolean) {
+        buttonItems.find { it.state == ButtonState.MobileData }?.isEnabled = isMobileDataOn
+        notifyDataSetChanged()
+    }
 
     private fun toggleMute() {
-        val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        if (audioManager.isStreamMute(AudioManager.STREAM_SYSTEM)) {
-            // Unmute all streams
-            audioManager.adjustStreamVolume(AudioManager.STREAM_SYSTEM, AudioManager.ADJUST_UNMUTE, 0)
-            audioManager.adjustStreamVolume(AudioManager.STREAM_RING, AudioManager.ADJUST_UNMUTE, 0)
-            audioManager.adjustStreamVolume(AudioManager.STREAM_NOTIFICATION, AudioManager.ADJUST_UNMUTE, 0)
-            audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_UNMUTE, 0)
-            // audioManager.adjustStreamVolume(AudioManager.STREAM_ALARM,AudioManager.ADJUST_UNMUTE, 0)
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (notificationManager.isNotificationPolicyAccessGranted) {
+            val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            val currentMode = audioManager.ringerMode
+            if (currentMode == AudioManager.RINGER_MODE_SILENT) {
+                audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
+            } else {
+                audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
+            }
+            listenerAll.muteStateChange(audioManager.ringerMode == AudioManager.RINGER_MODE_SILENT)
         } else {
-            // Mute all streams
-            audioManager.adjustStreamVolume(AudioManager.STREAM_SYSTEM, AudioManager.ADJUST_MUTE, 0)
-            audioManager.adjustStreamVolume(AudioManager.STREAM_RING, AudioManager.ADJUST_MUTE, 0)
-            audioManager.adjustStreamVolume(AudioManager.STREAM_NOTIFICATION, AudioManager.ADJUST_MUTE, 0)
-            audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_MUTE, 0)
-            // audioManager.adjustStreamVolume(AudioManager.STREAM_ALARM,AudioManager.ADJUST_MUTE, 0)
+            Toast.makeText(context, "Do Not Disturb access not granted", Toast.LENGTH_SHORT).show()
         }
     }
+
 
     private fun openLocation() {
         val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
@@ -112,6 +125,7 @@ class ButtonAdapter(
         val intent = Intent(Settings.ACTION_AIRPLANE_MODE_SETTINGS)
         context.startActivity(intent)
     }
+
     private fun toggleAutoBrightness() {
         val isEnabled = Settings.System.getInt(
             context.contentResolver,
@@ -145,10 +159,16 @@ class ButtonAdapter(
             if (isLocked) "Orientation Lock OFF" else "Orientation Lock ON",
             Toast.LENGTH_SHORT
         ).show()
+
     }
+    private fun toggleHotspot() {
+        val intent = Intent(Intent.ACTION_MAIN)
+        intent.setClassName(
+            "com.android.settings",
+            "com.android.settings.TetherSettings"
+        )
+        context.startActivity(intent)
 
-
-
-
-        override fun getItemCount(): Int = buttonItems.size
+    }
+    override fun getItemCount(): Int = buttonItems.size
 }

@@ -7,15 +7,15 @@ import android.provider.Settings
 import android.widget.Toast
 import com.example.mobilecontrolsappimproved.com.example.mobilecontrolsappimproved.ListenerAll
 
-class AutoBrightnessBroadcastReceiver(private val listener: ListenerAll) : BroadcastReceiver() {
+class AutoBrightnessBroadcastReceiver(private val onAutoBrightnessChanged: ListenerAll) : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
-        if (intent == null || context == null) return
-        val isAutoBrightnessEnabled = Settings.System.getInt(
-            context.contentResolver,
-            Settings.System.SCREEN_BRIGHTNESS_MODE,
-            Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL
-        ) == Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC
-        listener.brightnessStateChange(isAutoBrightnessEnabled)
-        Toast.makeText(context, "Auto Brightness State Changed: $isAutoBrightnessEnabled", Toast.LENGTH_SHORT).show() // Debugging toast
+        if (intent != null && Settings.System.SCREEN_BRIGHTNESS_MODE == intent.action) {
+            val isAutoBrightnessEnabled = Settings.System.getInt(
+                context?.contentResolver,
+                Settings.System.SCREEN_BRIGHTNESS_MODE,
+                Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL
+            ) == Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC
+            onAutoBrightnessChanged.brightnessStateChange(isAutoBrightnessEnabled)
+        }
     }
 }

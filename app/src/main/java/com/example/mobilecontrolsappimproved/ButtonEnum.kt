@@ -11,8 +11,7 @@ enum class ButtonState(
     val enabledBackground : Int,
     val disabledBackground : Int
 ) {
-    Bluetooth(R.drawable.ic_bluetooth_enabled, R.drawable.ic_bluetooth_disabled, "Bluetooth: ON", "Bluetooth: OFF",
-        R.drawable.button_design,R.drawable.button_off_design),
+    Bluetooth(R.drawable.ic_bluetooth_enabled, R.drawable.ic_bluetooth_disabled, "Bluetooth: ON", "Bluetooth: OFF",R.drawable.button_design,R.drawable.button_off_design),
     Flashlight(R.drawable.ic_flashlight_enabled, R.drawable.ic_flashlight_disabled, "Flashlight: ON", "Flashlight: OFF",R.drawable.button_design,R.drawable.button_off_design),
     Wifi(R.drawable.ic_wifi_enabled, R.drawable.ic_wifi_disabled, "Wifi: ON", "Wifi: OFF",R.drawable.button_design,R.drawable.button_off_design),
     MobileData(R.drawable.ic_mobiledata_enabled, R.drawable.ic_mobiledata_disabled, "Mobile Data: ON", "Mobile Data: OFF",R.drawable.button_design,R.drawable.button_off_design),
