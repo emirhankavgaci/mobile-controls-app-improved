@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.location.LocationManager
 import android.media.AudioManager
 import android.net.Uri
 import android.net.wifi.WifiManager
@@ -39,6 +40,7 @@ class MainActivity : AppCompatActivity(), ListenerAll {
     private lateinit var muteReceiver: MuteBroadcastReceiver
     private lateinit var hotspotReceiver: HotspotBroadcastReceiver
     private lateinit var airplaneModeReceiver: AirplaneModeBroadcastReceiver
+    private lateinit var locationReceiver: LocationBroadcastReceiver
 
 
     lateinit var flashlightManager: FlashlightManager
@@ -140,6 +142,7 @@ class MainActivity : AppCompatActivity(), ListenerAll {
         muteReceiver = MuteBroadcastReceiver(this)
         hotspotReceiver = HotspotBroadcastReceiver(this)
         airplaneModeReceiver = AirplaneModeBroadcastReceiver(this)
+        locationReceiver = LocationBroadcastReceiver(this)
 
         val flashFilter = IntentFilter("com.example.ACTION_FLASHLIGHT_STATE_CHANGED")
         registerReceiver(flashlightReceiver, flashFilter, RECEIVER_NOT_EXPORTED)
@@ -147,11 +150,11 @@ class MainActivity : AppCompatActivity(), ListenerAll {
         val mobileDataFilter = IntentFilter("com.example.ACTION_MOBILE_DATA_STATE_CHANGED")
         registerReceiver(dataReceiver, mobileDataFilter, RECEIVER_NOT_EXPORTED)
 
-        val brightnessFilter = IntentFilter("com.example.ACTION_BRIGHTNESS_STATE_CHANGED")
-        registerReceiver(autoBrightnessReceiver, brightnessFilter, RECEIVER_NOT_EXPORTED)
+        val brightnessFilter = IntentFilter("android.settings.SCREEN_BRIGHTNESS_MODE_CHANGED")
+        registerReceiver(autoBrightnessReceiver, brightnessFilter)
 
-        val orientationFilter = IntentFilter("com.example.ACTION_ORIENTATION_STATE_CHANGED")
-        registerReceiver(orientationReceiver, orientationFilter, RECEIVER_NOT_EXPORTED)
+        val orientationFilter = IntentFilter("android.settings.ACCELEROMETER_ROTATION_CHANGED")
+        registerReceiver(orientationReceiver, orientationFilter)
 
         val btFilter = IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
         registerReceiver(bluetoothReceiver, btFilter)
@@ -167,6 +170,10 @@ class MainActivity : AppCompatActivity(), ListenerAll {
 
         val airplaneFilter = IntentFilter(Intent.ACTION_AIRPLANE_MODE_CHANGED)
         registerReceiver(airplaneModeReceiver, airplaneFilter)
+
+        val locationFilter = IntentFilter(LocationManager.MODE_CHANGED_ACTION)
+        registerReceiver(locationReceiver, locationFilter)
+
     }
 
     private fun setState() {
@@ -188,7 +195,7 @@ class MainActivity : AppCompatActivity(), ListenerAll {
                 }
 
                 ButtonState.MobileData -> {
-                    item.isEnabled = dataManager.isMobileDataEnabled()
+                    item.isEnabled = isMobileDataEnabled()
                 }
 
                 ButtonState.AutoBrightness -> {
@@ -199,7 +206,6 @@ class MainActivity : AppCompatActivity(), ListenerAll {
                     ) == Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC
                     item.isEnabled = isAutoBrightnessEnabled
                 }
-
                 ButtonState.LockOrientation -> {
                     val isOrientationLocked = Settings.System.getInt(
                         contentResolver,
@@ -215,6 +221,9 @@ class MainActivity : AppCompatActivity(), ListenerAll {
 
                 ButtonState.Hotspot -> {
                     item.isEnabled = isHotspotEnabled()
+                }
+                ButtonState.Location -> {
+                    item.isEnabled = isLocationEnabled()
                 }
 
                 else -> {}
@@ -234,6 +243,7 @@ class MainActivity : AppCompatActivity(), ListenerAll {
         unregisterReceiver(muteReceiver)
         unregisterReceiver(hotspotReceiver)
         unregisterReceiver(airplaneModeReceiver)
+        unregisterReceiver(locationReceiver)
     }
 
     private fun isHotspotEnabled(): Boolean {
@@ -248,6 +258,12 @@ class MainActivity : AppCompatActivity(), ListenerAll {
             e.printStackTrace()
             return false
         }
+    }
+
+    private fun isLocationEnabled(): Boolean {
+        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+                locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
     }
 
     private fun isMuteEnabled(): Boolean {

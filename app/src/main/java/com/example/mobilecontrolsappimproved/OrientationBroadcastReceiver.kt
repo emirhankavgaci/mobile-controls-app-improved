@@ -4,12 +4,11 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.provider.Settings
-import android.widget.Toast
 import com.example.mobilecontrolsappimproved.com.example.mobilecontrolsappimproved.ListenerAll
 
 class OrientationBroadcastReceiver(private val onOrientationChanged: ListenerAll) : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
-        if (intent != null && Settings.System.ACCELEROMETER_ROTATION == intent.action) {
+        if (intent != null && intent.action == "android.settings.ACCELEROMETER_ROTATION_CHANGED") {
             val isOrientationLocked = Settings.System.getInt(
                 context?.contentResolver,
                 Settings.System.ACCELEROMETER_ROTATION,
@@ -19,5 +18,3 @@ class OrientationBroadcastReceiver(private val onOrientationChanged: ListenerAll
         }
     }
 }
-
-
