@@ -43,5 +43,4 @@ class MobileDataManager(val context: Context) {
         val networkCapabilities = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
         return networkCapabilities?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ?: false
     }
-
 }
