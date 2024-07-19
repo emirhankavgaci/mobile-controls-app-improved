@@ -7,7 +7,6 @@ import android.content.Context
 import android.content.Intent
 import android.hardware.camera2.CameraManager
 import android.media.AudioManager
-import android.net.wifi.WifiConfiguration
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.provider.Settings
@@ -17,6 +16,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity.BLUETOOTH_SERVICE
@@ -34,9 +34,9 @@ class ButtonAdapter(
     class ButtonViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val button: Button = view.findViewById(R.id.button)
         val imageV: ImageView = view.findViewById(R.id.imageView)
+        val textV : TextView = view.findViewById(R.id.textView)
 
     }
-
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ButtonViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.button_layouts, parent, false)
@@ -49,6 +49,7 @@ class ButtonAdapter(
         val state = buttonItem.state
         holder.button.background = ContextCompat.getDrawable(context, if (buttonItem.isEnabled) state.enabledBackground else state.disabledBackground)
         holder.imageV.setImageDrawable(ContextCompat.getDrawable(context, if (buttonItem.isEnabled) state.enabledIcon else state.disabledIcon))
+        holder.textV.text = if(buttonItem.isEnabled) state.enabledText else state.disabledText
 
         holder.button.setOnClickListener {
             when (buttonItem.state) {
@@ -90,11 +91,6 @@ class ButtonAdapter(
         buttonItems.find { it.state == ButtonState.AirplaneMode }?.isEnabled = isAirplaneModeOn
         notifyDataSetChanged()
     }
-    fun updateMobileDataState(isMobileDataOn: Boolean) {
-        buttonItems.find { it.state == ButtonState.MobileData }?.isEnabled = isMobileDataOn
-        notifyDataSetChanged()
-    }
-
     private fun toggleMute() {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (notificationManager.isNotificationPolicyAccessGranted) {
@@ -118,7 +114,7 @@ class ButtonAdapter(
 
     }
     private fun openWifi() {
-        val intent = Intent(Settings.ACTION_WIFI_SETTINGS)
+        val intent = Intent(Settings.Panel.ACTION_WIFI)
         context.startActivity(intent) }
 
     private fun openAirplaneModeSettings() {

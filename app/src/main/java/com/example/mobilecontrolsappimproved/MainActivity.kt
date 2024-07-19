@@ -150,11 +150,11 @@ class MainActivity : AppCompatActivity(), ListenerAll {
         val mobileDataFilter = IntentFilter("com.example.ACTION_MOBILE_DATA_STATE_CHANGED")
         registerReceiver(dataReceiver, mobileDataFilter, RECEIVER_NOT_EXPORTED)
 
-        val brightnessFilter = IntentFilter("com.example.ACTION_BRIGHTNESS_STATE_CHANGED")
-        registerReceiver(autoBrightnessReceiver, brightnessFilter, RECEIVER_NOT_EXPORTED)
+        val brightnessFilter = IntentFilter("android.settings.SCREEN_BRIGHTNESS_MODE_CHANGED")
+        registerReceiver(autoBrightnessReceiver, brightnessFilter)
 
-        val orientationFilter = IntentFilter("com.example.ACTION_ORIENTATION_STATE_CHANGED")
-        registerReceiver(orientationReceiver, orientationFilter, RECEIVER_NOT_EXPORTED)
+        val orientationFilter = IntentFilter("android.settings.ACCELEROMETER_ROTATION_CHANGED")
+        registerReceiver(orientationReceiver, orientationFilter)
 
         val btFilter = IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
         registerReceiver(bluetoothReceiver, btFilter)
@@ -206,7 +206,6 @@ class MainActivity : AppCompatActivity(), ListenerAll {
                     ) == Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC
                     item.isEnabled = isAutoBrightnessEnabled
                 }
-
                 ButtonState.LockOrientation -> {
                     val isOrientationLocked = Settings.System.getInt(
                         contentResolver,
