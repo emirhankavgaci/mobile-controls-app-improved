@@ -8,7 +8,7 @@ import com.example.mobilecontrolsappimproved.com.example.mobilecontrolsappimprov
 
 class OrientationBroadcastReceiver(private val onOrientationChanged: ListenerAll) : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
-        if (intent != null && intent.action == "android.settings.ACCELEROMETER_ROTATION_CHANGED") {
+        if (intent?.action == Intent.ACTION_CONFIGURATION_CHANGED) {
             val isOrientationLocked = Settings.System.getInt(
                 context?.contentResolver,
                 Settings.System.ACCELEROMETER_ROTATION,

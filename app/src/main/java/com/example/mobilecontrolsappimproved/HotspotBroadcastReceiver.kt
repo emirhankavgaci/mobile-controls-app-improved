@@ -11,7 +11,6 @@ class HotspotBroadcastReceiver(private val listener: ListenerAll) : BroadcastRec
     override fun onReceive(context: Context?, intent: Intent?) {
         if (intent == null || context == null) return
 
-        // Assuming you're using CONNECTIVITY_ACTION to detect changes in network state
         if (intent.action == "android.net.wifi.WIFI_AP_STATE_CHANGED") {
             val state = intent.getIntExtra("wifi_state", 0)
             val isHotspotActive = state == 13 // WIFI_AP_STATE_ENABLED

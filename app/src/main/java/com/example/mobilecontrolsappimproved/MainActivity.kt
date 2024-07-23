@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.database.ContentObserver
 import android.location.LocationManager
 import android.media.AudioManager
 import android.net.Uri
@@ -23,6 +24,7 @@ import com.example.mobilecontrolsappimproved.com.example.mobilecontrolsappimprov
 import com.example.mobilecontrolsappimproved.com.example.mobilecontrolsappimproved.ListenerAll
 import com.example.mobilecontrolsappimproved.com.example.mobilecontrolsappimproved.MobileDataManager
 import com.example.mobilecontrolsappimproved.com.example.mobilecontrolsappimproved.WifiBroadcastReceiver
+import java.util.logging.Handler
 
 class MainActivity : AppCompatActivity(), ListenerAll {
 
@@ -41,6 +43,8 @@ class MainActivity : AppCompatActivity(), ListenerAll {
     private lateinit var hotspotReceiver: HotspotBroadcastReceiver
     private lateinit var airplaneModeReceiver: AirplaneModeBroadcastReceiver
     private lateinit var locationReceiver: LocationBroadcastReceiver
+    private lateinit var brightnessContentObserver: BrightnessContentObserver
+    private lateinit var orientationObserver: OrientationLockContentObserver
 
 
     lateinit var flashlightManager: FlashlightManager
@@ -98,7 +102,26 @@ class MainActivity : AppCompatActivity(), ListenerAll {
     override fun onResume() {
         super.onResume()
         setState()
+        brightnessContentObserver = BrightnessContentObserver(this, this)
+        contentResolver.registerContentObserver(
+            Settings.System.getUriFor(Settings.System.SCREEN_BRIGHTNESS_MODE),
+            true,
+            brightnessContentObserver)
+        orientationObserver = OrientationLockContentObserver(this,this)
+        contentResolver.registerContentObserver(
+            Settings.System.getUriFor(Settings.System.ACCELEROMETER_ROTATION),
+            true,
+            orientationObserver
+        )
     }
+
+    override fun onPause() {
+        super.onPause()
+        contentResolver.unregisterContentObserver(brightnessContentObserver)
+        contentResolver.unregisterContentObserver(orientationObserver)
+    }
+
+
 
     private fun requestWriteSettingsPermission() {
         val intent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS)
@@ -151,9 +174,9 @@ class MainActivity : AppCompatActivity(), ListenerAll {
         registerReceiver(dataReceiver, mobileDataFilter, RECEIVER_NOT_EXPORTED)
 
         val brightnessFilter = IntentFilter("android.settings.SCREEN_BRIGHTNESS_MODE_CHANGED")
-        registerReceiver(autoBrightnessReceiver, brightnessFilter)
+        registerReceiver(autoBrightnessReceiver, brightnessFilter, RECEIVER_NOT_EXPORTED)
 
-        val orientationFilter = IntentFilter("android.settings.ACCELEROMETER_ROTATION_CHANGED")
+        val orientationFilter = IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED)
         registerReceiver(orientationReceiver, orientationFilter)
 
         val btFilter = IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
@@ -253,7 +276,7 @@ class MainActivity : AppCompatActivity(), ListenerAll {
             val method = wifiManager.javaClass.getDeclaredMethod("getWifiApState")
             method.isAccessible = true
             val state = method.invoke(wifiManager) as Int
-            return state == 13 // 13 is WifiManager.WIFI_AP_STATE_ENABLED
+            return state == 13 //WifiManager.WIFI_AP_STATE_ENABLED
         } catch (e: Exception) {
             e.printStackTrace()
             return false
@@ -322,10 +345,8 @@ class MainActivity : AppCompatActivity(), ListenerAll {
     }
 
     override fun orientationStateChange(isOrientationLockedState: Boolean) {
-        buttonItems2.find { it.state == ButtonState.LockOrientation }?.isEnabled =
-            isOrientationLockedState
+        buttonItems2.find { it.state == ButtonState.LockOrientation }?.isEnabled = isOrientationLockedState
         buttonAdapter.updateStates(buttonItems2)
-        setState()
     }
 
     override fun muteStateChange(isMuteState: Boolean) {
@@ -353,3 +374,35 @@ class MainActivity : AppCompatActivity(), ListenerAll {
     }
 
 }
+
+class BrightnessContentObserver(
+    private val context: Context,
+    private val onAutoBrightnessChanged: ListenerAll
+) : ContentObserver(android.os.Handler()) {
+
+    override fun onChange(selfChange: Boolean) {
+        super.onChange(selfChange)
+        val isAutoBrightnessEnabled = Settings.System.getInt(
+            context.contentResolver,
+            Settings.System.SCREEN_BRIGHTNESS_MODE,
+            Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL
+        ) == Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC
+        onAutoBrightnessChanged.brightnessStateChange(isAutoBrightnessEnabled)
+    }
+}
+class OrientationLockContentObserver(
+    private val context: Context,
+    private val listener: ListenerAll
+) : ContentObserver(android.os.Handler()) {
+
+    override fun onChange(selfChange: Boolean) {
+        super.onChange(selfChange)
+        val isOrientationLocked = Settings.System.getInt(
+            context.contentResolver,
+            Settings.System.ACCELEROMETER_ROTATION,
+            1
+        ) == 0
+        listener.orientationStateChange(isOrientationLocked)
+    }
+}
+

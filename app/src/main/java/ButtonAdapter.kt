@@ -129,14 +129,18 @@ class ButtonAdapter(
             Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL
         ) == Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC
 
+        val newMode = if (isEnabled) Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL else Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC
         Settings.System.putInt(
             context.contentResolver,
             Settings.System.SCREEN_BRIGHTNESS_MODE,
-            if (isEnabled) Settings.System.SCREEN_BRIGHTNESS_MODE_MANUAL else Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC
+            newMode
         )
 
+        listenerAll.brightnessStateChange(newMode == Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC)
         Toast.makeText(context, if (isEnabled) "Auto Brightness OFF" else "Auto Brightness ON", Toast.LENGTH_SHORT).show()
     }
+
+
     private fun toggleOrientationLock() {
         val isLocked = Settings.System.getInt(
             context.contentResolver,

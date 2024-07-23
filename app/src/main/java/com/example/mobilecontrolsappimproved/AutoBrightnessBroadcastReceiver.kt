@@ -8,7 +8,7 @@ import com.example.mobilecontrolsappimproved.com.example.mobilecontrolsappimprov
 
 class AutoBrightnessBroadcastReceiver(private val onAutoBrightnessChanged: ListenerAll) : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
-        if (intent != null && intent.action == "android.settings.SCREEN_BRIGHTNESS_MODE_CHANGED") {
+        if (intent != null && intent.action == Intent.ACTION_CONFIGURATION_CHANGED) {
             val isAutoBrightnessEnabled = Settings.System.getInt(
                 context?.contentResolver,
                 Settings.System.SCREEN_BRIGHTNESS_MODE,
